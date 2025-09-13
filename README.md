@@ -82,7 +82,7 @@ By pairing official data with transparent estimation rules, Student Financial Ai
 ---
 
 ## 📦 Repo Structure
-
+```
 Student_Financial_Aid/
 ├─ client/                  # React + Vite + TypeScript + Tailwind
 │  ├─ src/
@@ -95,17 +95,18 @@ Student_Financial_Aid/
 ├─ .env                     # DATAGOV_API_KEY=... (never commit)
 └─ README.md
 
+```
 
-
----
+ 
 
 ## ⚙️ Setup & Run
 
 ### 1) Prerequisites
 - Node 18+  
 - A **College Scorecard API key** from [data.gov](https://catalog.data.gov/)
-
+ 
 ### 2) Environment
+ 
 Create a `.env` file (root or `server/` depending on your implementation):
 
 
