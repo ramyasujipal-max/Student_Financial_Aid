@@ -95,7 +95,6 @@ Student_Financial_Aid/
 └─ README.md
 
 
-
 ---
 
 ## ⚙️ Setup & Run
@@ -106,10 +105,6 @@ Student_Financial_Aid/
 
 ### 2) Environment
 Create a `.env` file (root or `server/` depending on your implementation):
-
-DATAGOV_API_KEY=YOUR_DATA_GOV_KEY
-PORT=5174
-VITE_API_BASE=/api
 
 
 ### 3) Install & Start (two terminals)
@@ -128,4 +123,6 @@ Client → http://localhost:5173
 
 Server → http://localhost:5174
 
- 
+DATAGOV_API_KEY=YOUR_DATA_GOV_KEY
+PORT=5174
+VITE_API_BASE=/api
