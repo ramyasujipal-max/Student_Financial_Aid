@@ -83,16 +83,17 @@ By pairing official data with transparent estimation rules, Student Financial Ai
 
 ## 📦 Repo Structure
 Student_Financial_Aid/
-├─ client/ # React + Vite + TypeScript + Tailwind
-│ ├─ src/
-│ └─ package.json # name: "student-financial-aid-client"
-├─ server/ # Node + Express API proxy
-│ ├─ src/
-│ └─ package.json # name: "student-financial-aid-server"
+├─ client/                  # React + Vite + TypeScript + Tailwind
+│  ├─ src/
+│  └─ package.json          # name: "student-financial-aid-client"
+├─ server/                  # Node + Express API proxy
+│  ├─ src/
+│  └─ package.json          # name: "student-financial-aid-server"
 ├─ docs/
-│ └─ Student_Financial_Aid_Presentation.pdf
-├─ .env # DATAGOV_API_KEY=... (never commit)
+│  └─ Student_Financial_Aid_Presentation.pdf
+├─ .env                     # DATAGOV_API_KEY=... (never commit)
 └─ README.md
+
 
 
 ---
