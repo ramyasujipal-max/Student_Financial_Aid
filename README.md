@@ -82,6 +82,7 @@ By pairing official data with transparent estimation rules, Student Financial Ai
 ---
 
 ## 📦 Repo Structure
+
 Student_Financial_Aid/
 ├─ client/                  # React + Vite + TypeScript + Tailwind
 │  ├─ src/
@@ -93,6 +94,7 @@ Student_Financial_Aid/
 │  └─ Student_Financial_Aid_Presentation.pdf
 ├─ .env                     # DATAGOV_API_KEY=... (never commit)
 └─ README.md
+
 
 
 ---
