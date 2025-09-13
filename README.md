@@ -1,50 +1,130 @@
-# 🎓 StudentAid – College Cost Transparency for All
+# 🎓 Student Financial Aid — College Cost Transparency for All
 
-StudentAid helps students and families understand the **real cost of college** by making financial aid simple and transparent.  
-It uses data from the **College Scorecard API** and visualizes out-of-pocket expenses through clear charts and breakdowns.
+**Student Financial Aid** helps students and families understand the **real cost of college** by making financial aid simple and transparent.  
+It uses the **U.S. Department of Education College Scorecard API** and integrates clear **need-based** and **merit-based (GPA)** logic to estimate what students may actually pay.
 
 ---
 
 ## 🚀 Problem
-College costs are often confusing and overwhelming. Many students, especially from low-income or first-generation backgrounds, don’t fully understand their **true out-of-pocket costs** until it’s too late, leading to poor decisions and higher debt.
+College pricing is confusing. Many students—especially from low-income or first-gen backgrounds—don’t learn their true out-of-pocket cost until it’s too late, leading to poor choices and higher debt.
 
 ---
 
 ## 💡 Solution
-StudentAid provides:
-- A **search tool** to look up colleges.
-- An **estimated financial breakdown** (grants, work-study, loans, out-of-pocket).
-- A **donut chart visualization** of costs, making the numbers easier to digest.
-- Simple, transparent formulas so students know where the numbers come from.
+Student Financial Aid provides:
+- 🔍 A **search tool** to look up U.S. colleges  
+- 📊 A clear **estimated financial breakdown** (need grants, merit scholarships, work-study, loans, out-of-pocket)  
+- 🍩 A **donut chart** that makes numbers easy to understand  
+- 🧮 **Transparent formulas** so users can see exactly how estimates are calculated  
 
 ---
 
 ## 🌍 Impact
-By making financial aid more transparent, StudentAid empowers students to make informed choices, reduces the risk of overwhelming debt, and promotes **education equity**.
+By pairing official data with transparent estimation rules, Student Financial Aid empowers smarter decisions, reduces surprise costs, and supports **education equity**.
 
 ---
 
 ## ✨ Features
-- 🔍 Search any U.S. college by name.
-- 📊 Visualize estimated grants, loans, and costs with a clean chart.
-- ⚡ Powered by the **College Scorecard API**.
-- 🎯 Focused on accessibility and clarity for high school students.
+- 🔎 Search any U.S. college by name  
+- 📊 Visualize **Need Grants**, **Merit Scholarships**, **Work-Study**, **Loans**, and **Out-of-Pocket**  
+- 🧠 **Merit (GPA) logic** explicitly modeled as scholarships  
+- ⚡ API proxy keeps your Scorecard API key off the client  
+- 🧩 Accessible UI designed for high-school students & families  
 
 ---
 
 ## 🛠 Tech Stack
-- **Frontend:** React + Vite + TypeScript + TailwindCSS
-- **Backend:** Node.js + Express
-- **Data Source:** U.S. Department of Education College Scorecard API
+- **Frontend:** React + Vite + TypeScript + Tailwind CSS  
+- **Charts:** Recharts (donut visualization)  
+- **Backend:** Node.js + Express (API proxy)  
+- **Data Source:** U.S. Dept. of Education **College Scorecard API**
 
 ---
 
-## 📹 Demo
-👉 [Add your demo video link here once recorded]  
+## 🧮 Estimation Model (Plain English)
+
+> These are lightweight **heuristics for learning & comparison**, not official offers. Actual awards vary by institution and financial-aid policies.
+
+**Variables**
+- `N` = school’s **net price** (from Scorecard when available)  
+- `I` = **household income** (user input)  
+- `G_need` = **need-based grants** (by income tier)  
+- `S_merit` = **merit-based scholarship** (by GPA tier)  
+- `W` = **work-study** (flat assumption by income)  
+- `L` = **estimated loans** (residual)  
+- `C` = **expected student contribution** (fixed; e.g., $1,800)  
+- `GPA` = 0.0–4.0 (user input)
+
+**1) Need-Based Grants (by income)**
+- `I ≤ $30k` → `$9,000`  
+- `$30,001–$48k` → `$7,000`  
+- `$48,001–$75k` → `$5,000`  
+- `$75,001–$110k` → `$2,500`  
+- `> $110k` → `$1,000`  
+- Cap so that `G_need ≤ N`
+
+**2) Merit-Based Scholarships (by GPA)**
+- `GPA ≥ 3.8` → `+$1,500`  
+- `3.5 ≤ GPA < 3.8` → `+$750`  
+- `GPA < 3.5` → `+$0`  
+- Cap so that `G_need + S_merit ≤ N`
+
+**3) Work-Study**
+- If `I ≤ $110k`: `$2,000`  
+- Else: `$1,500`
+
+**4) Loans & Out-of-Pocket**
+- `L = max(0, N - G_need - S_merit - W - C)`  
+- `OOP = max(0, N - G_need - S_merit - W - L)`
+
+> The UI labels each bucket distinctly: **Need Grants**, **Merit Scholarship**, **Work-Study**, **Loans**, **Out-of-Pocket**.
 
 ---
 
-## 📂 Repo Structure
-/client → React + Vite frontend
-/server → Express backend (API proxy)
-/docs → (Optional) Presentation slides, PDF
+## 📦 Repo Structure
+Student_Financial_Aid/
+├─ client/ # React + Vite + TypeScript + Tailwind
+│ ├─ src/
+│ └─ package.json # name: "student-financial-aid-client"
+├─ server/ # Node + Express API proxy
+│ ├─ src/
+│ └─ package.json # name: "student-financial-aid-server"
+├─ docs/
+│ └─ Student_Financial_Aid_Presentation.pdf
+├─ .env # DATAGOV_API_KEY=... (never commit)
+└─ README.md
+
+
+---
+
+## ⚙️ Setup & Run
+
+### 1) Prerequisites
+- Node 18+  
+- A **College Scorecard API key** from [data.gov](https://catalog.data.gov/)
+
+### 2) Environment
+Create a `.env` file (root or `server/` depending on your implementation):
+
+DATAGOV_API_KEY=YOUR_DATA_GOV_KEY
+PORT=5174
+VITE_API_BASE=/api
+
+
+### 3) Install & Start (two terminals)
+
+**Server**
+```bash
+cd server
+npm install
+npm run dev
+
+cd client
+npm install
+npm run dev
+
+Client → http://localhost:5173
+
+Server → http://localhost:5174
+
+ 

@@ -1,5 +1,5 @@
 import React from "react";
-import { Search, GraduationCap, DollarSign } from "lucide-react";
+import { Search, GraduationCap } from "lucide-react";
 import {
   ResponsiveContainer,
   PieChart,
@@ -9,12 +9,26 @@ import {
 } from "recharts";
 
 /* =========================
+   Types
+   ========================= */
+
+type SchoolItem = {
+  id: number;
+  name: string;
+  city?: string;
+  state?: string;
+  subtitle?: string;
+};
+
+/* =========================
    Constants
    ========================= */
 
+// Five slices now (added Merit Scholarships)
 const START_PIE = [
   { name: "Grants", value: 6000 },
-  { name: "Work-Study", value: 2500 },
+  { name: "Merit Scholarships", value: 0 },
+  { name: "Work-Study", value: 2000 },
   { name: "Loans", value: 7000 },
   { name: "Out-of-Pocket", value: 1800 },
 ];
@@ -27,30 +41,33 @@ const TILE_GRADS: Array<[string, string]> = [
 ];
 
 const ICON_HEX = ["#065F46", "#3730A3", "#92400E", "#9F1239"];
-const COLORS = ["#10B981", "#34D399", "#F59E0B", "#6366F1"];
+
+// Five colors for five slices
+const COLORS = ["#10B981", "#3B82F6", "#F59E0B", "#6366F1", "#EF4444"];
 
 /* =========================
    Helpers / components
    ========================= */
 
-// Minimal hover tooltip (Tailwind only)
+// Minimal hover tooltip (native title)
 function InfoTip({ text }: { text: string }) {
   return (
     <span
       className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full border text-xs leading-none cursor-help select-none"
-      title={text}   // <-- native tooltip on hover
+      title={text}
     >
       i
     </span>
   );
 }
 
-
-
-
 const fmt = (n?: number) =>
   typeof n === "number"
-    ? n.toLocaleString("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 })
+    ? n.toLocaleString("en-US", {
+        style: "currency",
+        currency: "USD",
+        maximumFractionDigits: 0,
+      })
     : "—";
 
 function bracketFromIncome(income: number) {
@@ -65,57 +82,58 @@ function pieValue(pie: Array<{ name: string; value: number }>, name: string) {
   return Number(pie.find((s) => s.name === name)?.value ?? 0);
 }
 
+// NEW: GPA → Merit heuristic
+function meritFromGpa(gpa: number) {
+  if (gpa >= 3.9) return 6000;
+  if (gpa >= 3.7) return 4000;
+  if (gpa >= 3.4) return 2000;
+  return 0;
+}
+
 function makeExplanations(
   pie: Array<{ name: string; value: number }>,
   income: number,
-  netPrice: number
+  netPrice: number,
+  gpa: number
 ) {
   const grants = pieValue(pie, "Grants");
+  const merit = pieValue(pie, "Merit Scholarships");
   const workStudy = pieValue(pie, "Work-Study");
   const loans = pieValue(pie, "Loans");
   const outOfPocket = pieValue(pie, "Out-of-Pocket");
 
-  const gTarget =
-    income <= 30000 ? 9000 :
-    income <= 48000 ? 7000 :
-    income <= 75000 ? 5000 :
-    income <= 110000 ? 2500 : 1000;
+  return {
+    netPriceText:
+      `Net price is retrieved directly from the U.S. Dept. of Education’s College Scorecard API for the student’s income bracket (${bracketFromIncome(
+        income
+      )}). ` +
+      `If no value is available for that bracket, we fall back to tuition. For this run: netPrice = ${fmt(netPrice)}.`,
 
-return {
-  netPriceText:
-    `Net price is retrieved directly from the U.S. Dept. of Education’s College Scorecard API for the student’s income bracket (${bracketFromIncome(income)}). ` +
-    `If no value is available for that bracket, we fall back to tuition. For this run: netPrice = ${fmt(netPrice)}.`,
+    grantsText:
+      `Estimated grants by income bracket (heuristic): ≤$30k → $9,000; ≤$48k → $7,000; ≤$75k → $5,000; ≤$110k → $2,500; >$110k → $1,000. ` +
+      `We cap grants at net price so they never exceed total cost. For income ${fmt(income)} ⇒ estimated grants = ${fmt(grants)}.`,
 
-  grantsText:
-    `Estimated grants based on income brackets (heuristic): ≤$30k → $9,000; ≤$48k → $7,000; ≤$75k → $5,000; ≤$110k → $2,500; >$110k → $1,000. ` +
-    `We cap grants at net price so they never exceed total cost. For income ${fmt(income)} ⇒ estimated grants = ${fmt(grants)}.`,
+    meritText:
+      `Merit scholarships estimated from GPA: ≥3.9 → $6,000; 3.7–3.89 → $4,000; 3.4–3.69 → $2,000; <3.4 → $0. ` +
+      `For GPA ${gpa.toFixed(2)} ⇒ estimated merit = ${fmt(merit)}.`,
 
-  workStudyText:
-    `Rule-of-thumb estimate for work-study: $2,000 if income ≤ $110k, otherwise $1,500. ` +
-    `For income ${fmt(income)} ⇒ estimated work-study = ${fmt(workStudy)}.`,
+    workStudyText:
+      `Rule-of-thumb estimate for work-study: $2,000 if income ≤ $110k, otherwise $1,500. ` +
+      `For income ${fmt(income)} ⇒ estimated work-study = ${fmt(workStudy)}.`,
 
-  loansText:
-    `Loans are calculated so the package balances to net price. Formula: loans = max(0, netPrice − grants − work-study − $1,800). ` +
-    `For this case: ${fmt(netPrice)} − ${fmt(grants)} − ${fmt(workStudy)} − $1,800 = ${fmt(loans)}.`,
+    loansText:
+      `Loans are calculated so the package balances to net price after grants, merit, work-study, and a $1,800 contribution: loans = max(0, netPrice − grants − merit − work-study − $1,800). ` +
+      `For this case: ${fmt(netPrice)} − ${fmt(grants)} − ${fmt(merit)} − ${fmt(workStudy)} − $1,800 = ${fmt(loans)}.`,
 
-  oopText:
-    `Out-of-pocket is the remaining cost after grants, work-study, and loans. Formula: outOfPocket = max(0, netPrice − grants − work-study − loans). ` +
-    `For this case: ${fmt(netPrice)} − ${fmt(grants)} − ${fmt(workStudy)} − ${fmt(loans)} = ${fmt(outOfPocket)}.`,
-};
-
+    oopText:
+      `Out-of-pocket is what remains after all components. Formula: outOfPocket = max(0, netPrice − grants − merit − work-study − loans). ` +
+      `For this case: ${fmt(netPrice)} − ${fmt(grants)} − ${fmt(merit)} − ${fmt(workStudy)} − ${fmt(loans)} = ${fmt(outOfPocket)}.`,
+  };
 }
 
 /* =========================
    Main component
    ========================= */
-
-type SchoolItem = {
-  id: number;
-  name: string;
-  city?: string;
-  state?: string;
-  subtitle?: string;
-};
 
 export default function StudentAidUI() {
   const [term, setTerm] = React.useState("");
@@ -224,7 +242,7 @@ export default function StudentAidUI() {
       const r = await fetch("/api/estimate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ schoolId: selectedSchool.id, income }),
+        body: JSON.stringify({ schoolId: selectedSchool.id, income }), // GPA not sent; computed on client
       });
       const json = await r.json();
       if (!r.ok || !json.breakdown) {
@@ -232,12 +250,23 @@ export default function StudentAidUI() {
         alert("Estimate failed. Check server console.");
         return;
       }
+
       const { grants, workStudy, loans, outOfPocket } = json.breakdown;
+
+      // NEW: GPA-based merit scholarship on the client
+      const merit = meritFromGpa(gpa);
+
+      // Rebalance: reduce loans first; any remaining merit reduces out-of-pocket
+      const loansAfterMerit = Math.max(0, Number(loans || 0) - merit);
+      const meritLeft = Math.max(0, merit - Number(loans || 0));
+      const oopAfterMerit = Math.max(0, Number(outOfPocket || 0) - meritLeft);
+
       setPie([
         { name: "Grants", value: Math.round(Number(grants || 0)) },
+        { name: "Merit Scholarships", value: Math.round(merit) },
         { name: "Work-Study", value: Math.round(Number(workStudy || 0)) },
-        { name: "Loans", value: Math.round(Number(loans || 0)) },
-        { name: "Out-of-Pocket", value: Math.round(Number(outOfPocket || 0)) },
+        { name: "Loans", value: Math.round(loansAfterMerit) },
+        { name: "Out-of-Pocket", value: Math.round(oopAfterMerit) },
       ]);
     } catch (e) {
       console.error(e);
@@ -248,7 +277,7 @@ export default function StudentAidUI() {
   }
 
   const total = pie.reduce((s, x) => s + (Number(x.value) || 0), 0); // net price (sum of slices)
-  const explain = makeExplanations(pie, income, total);
+  const explain = makeExplanations(pie, income, total, gpa);
 
   /* ---- Render ---- */
 
@@ -256,18 +285,13 @@ export default function StudentAidUI() {
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-emerald-50">
       {/* Top bar */}
       <header className="sticky top-0 z-20 border-b bg-white/70 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-1">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-0">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-400 text-white shadow">
-              <DollarSign className="h-5 w-5" />
-            </div>
             <div className="leading-tight">
-              <h1 className="mt-0 md:mt-1 font-bold tracking-normal" style={{ color: "#123456", fontSize: 44 }}>
-                StudentAid
+              <h1 className="m-0 leading-tight font-bold tracking-normal" style={{ color: "#123456", fontSize: 34 }}>
+                Student Financial Aid
               </h1>
-              <p className="text-sm" style={{ color: "#566D7E", fontFamily: "Poppins, sans-serif" }}>
-                Financial Aid, Simplified
-              </p>
+
             </div>
           </div>
         </div>
@@ -276,12 +300,16 @@ export default function StudentAidUI() {
       <main className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-4 pt-0 pb-6 md:grid-cols-2">
         {/* LEFT: Search + inputs */}
         <section className="-mt-6">
-          <h2 className="mt-0 md:mt-1 font-bold tracking-normal" style={{ color: "#123456", fontSize: 33 }}>
-            Understand college costs in seconds
-          </h2>
+		<h2
+		  className="m-0 leading-tight tracking-normal font-normal"
+		  style={{ color: "#123456", fontSize: 22, fontWeight: "normal" }}
+		>
+		  Understand college costs in seconds
+		</h2>
+
 
           <p className="mt-4" style={{ color: "#123456", fontFamily: "serif", fontSize: "15px" }}>
-            Search a school to estimate grants, loans, out-of-pocket costs, acceptance rate, and tuition fees at a glance.
+            Search a school to estimate grants, merit, loans, out-of-pocket costs, acceptance rate, and tuition fees at a glance.
           </p>
 
           {/* Search */}
@@ -357,7 +385,7 @@ export default function StudentAidUI() {
               </label>
               <input
                 type="number"
-                step="0.1"
+                step={0.1}
                 min={0}
                 max={4}
                 value={gpa}
@@ -383,7 +411,7 @@ export default function StudentAidUI() {
                     </strong>
                   </span>
 
-                  <span className="inline-block mx-6">{'\u2003'}</span>
+                  <span className="inline-block mx-6">{"\u2003"}</span>
 
                   <span className="inline-flex items-baseline whitespace-nowrap">
                     <span className="text-slate-700">In-state tuition fees</span>
@@ -393,7 +421,7 @@ export default function StudentAidUI() {
                     </strong>
                   </span>
 
-                  <span className="inline-block mx-6">{'\u2003'}</span>
+                  <span className="inline-block mx-6">{"\u2003"}</span>
 
                   <span className="inline-flex items-baseline whitespace-nowrap">
                     <span className="text-slate-700">Out-of-state tuition fees</span>
@@ -409,20 +437,62 @@ export default function StudentAidUI() {
         </section>
 
         {/* RIGHT: Donut + breakdown */}
+		
         <section className="rounded-2xl border bg-white p-4 shadow-sm relative z-10">
-          <div className="mb-2" style={{ fontSize: 30, color: "#B93B8F", fontWeight: 600 }}>
+          <div className="mb-2" style={{ fontSize: 30, color: "#014421", fontWeight: 600 }}>
             Estimated breakdown
           </div>
 
-          <div className="relative w-full shrink-0" style={{ height: 300 }}>
+          <div className="relative w-full shrink-0" style={{
+    height: 300,
+    border: "2px solid black",   // <-- permanent black rectangle
+    borderRadius: "8px",         // optional rounded corners
+    padding: "8px",              // optional inner padding so donut doesn’t touch the border
+  }}
+>
             {total > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <PieChart key={pie.map((p) => p.value).join("-")}>
-                  <Pie data={pie} dataKey="value" nameKey="name" innerRadius="55%" outerRadius="85%" strokeWidth={1}>
-                    {pie.map((_, idx) => (
-                      <Cell key={idx} fill={COLORS[idx % COLORS.length]} />
+                <PieChart>
+                  <Pie
+                    data={pie}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius="55%"
+                    outerRadius="85%"
+                    strokeWidth={1}
+                    labelLine={false}
+					isAnimationActive={true}
+					//animationDuration={1000}   // 2 seconds
+					animationEasing="ease-out"
+                    label={({ cx, cy, midAngle, innerRadius, outerRadius, name, value, percent }) => {
+                      if (percent < 0.06) return null; // skip tiny slices to avoid overlap
+                      const r = innerRadius + (outerRadius - innerRadius) / 2;
+                      const x = cx + r * Math.cos((-midAngle * Math.PI) / 180);
+                      const y = cy + r * Math.sin((-midAngle * Math.PI) / 180);
+                      return (
+                        <text
+                          x={x}
+                          y={y}
+                          textAnchor="middle"
+                          dominantBaseline="central"
+                          fontSize={12}
+                          fontWeight={700}
+                          fill="white" // red labels as requested
+                          stroke="rgba(0,0,0,0.25)"
+                          strokeWidth={1}
+                          paintOrder="stroke"
+                        >
+                          <tspan x={x} dy="-0.25em">{name}</tspan>
+                          <tspan x={x} dy="1.2em">${Number(value).toLocaleString()}</tspan>
+                        </text>
+                      );
+                    }}
+                  >
+                    {pie.map((_, i) => (
+                      <Cell key={i} fill={COLORS[i % COLORS.length]} />
                     ))}
                   </Pie>
+
                   <ReTooltip formatter={(v: any, n: any) => [`$${Number(v).toLocaleString()}`, n]} />
                 </PieChart>
               </ResponsiveContainer>
@@ -438,6 +508,7 @@ export default function StudentAidUI() {
             {pie.map((s) => {
               const tip =
                 s.name === "Grants" ? explain.grantsText :
+                s.name === "Merit Scholarships" ? explain.meritText :
                 s.name === "Work-Study" ? explain.workStudyText :
                 s.name === "Loans" ? explain.loansText :
                 s.name === "Out-of-Pocket" ? explain.oopText :
